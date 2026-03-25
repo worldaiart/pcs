@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #000000;
+  --color-accent: var(--accent, #8A2BE2);
+  --color-accent-secondary: var(--accent-secondary, #00D2FF);
+  --color-accent-hover: var(--accent-hover, #6200EE);
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A1A1AA;
+  
+  --font-sans: "Inter", "Pretendard", system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary antialiased;
+  }
+}
+
+.glass-card {
+  @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl;
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-accent-secondary;
+}
