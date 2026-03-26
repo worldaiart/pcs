@@ -1,13 +1,424 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전국지역산업기술협동조합</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <!-- React & ReactDOM CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
 
+    <style type="text/tailwindcss">
+        @theme {
+            --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+        }
+        .gradient-text {
+            @apply bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)];
+        }
+        .glass-card {
+            @apply bg-white/5 backdrop-blur-xl border border-white/10;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body class="bg-black text-white font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { motion, AnimatePresence } = window.Motion;
+        const { 
+            Menu, X, Youtube, Instagram, Twitter, 
+            Settings, Layout, Type, Palette, Image: ImageIcon,
+            ChevronRight, ArrowRight, Wind, HeartPulse, Leaf,
+            Video, Megaphone, Mic2, Users, Network, Cpu, Bot, HelpCircle
+        } = window.lucideReact;
+
+        // --- Constants & Initial Data ---
+        const INITIAL_BUSINESS_MODELS = [
+            { id: 'air-care', title: '공공기관 에어 케어', description: '공공기관 에어컨 청소 및 공기정화 서비스. 정부 우선 구매 대상 비즈니스 모델로 안정적인 수익 창출.', icon: 'Wind', detailedDescription: '전국지역산업기술협동조합의 에어 케어 사업은 공공기관, 학교, 병원 등 대규모 시설의 실내 공기질을 혁신적으로 개선합니다.' },
+            { id: 'care', title: '케어복지법인', description: 'AI 활용 케어 전문가 양성. 홈케어 및 요양기관용 AI 환자 데이터 케어 시스템 기반 서비스.', icon: 'HeartPulse', detailedDescription: '초고령 사회를 대비하여 AI 기술을 접목한 스마트 케어 서비스를 제공합니다.' },
+            { id: 'smartfarm', title: '스마트 팜 협동 농장', description: 'AI 기반 빅데이터 위탁 운영 모델 (지역 발전형 + 청년 도약형). 전문가 양성 및 농장 운영.', icon: 'Leaf', detailedDescription: '전통 농업에 AI와 빅데이터를 결합하여 생산성을 극대화하는 미래형 농업 모델입니다.' },
+            { id: 'sns-agency', title: 'SNS 기획사', description: '1인 크리에이터 창작 기술 지원. 유튜브/인스타/X/틱톡/쓰레드 콘텐츠 수익 모델 협업.', icon: 'Video', detailedDescription: '1인 미디어 시대의 크리에이터들을 위한 종합 창작 지원 시스템입니다.' },
+            { id: 'sns-ad', title: 'SNS 광고 대행사', description: '자영업자 및 소상공인 마케팅 지원 (스토리텔링 및 비주얼 중심).', icon: 'Megaphone', detailedDescription: '지역 소상공인과 자영업자들을 위한 최적화된 마케팅 솔루션을 제공합니다.' },
+            { id: 'voice-keep', title: 'VOICE KEEP 법인', description: 'AI 스마트 보이스 메이커 양성. 지역 방언 AI 학습 데이터 구축, 유족을 위한 고인 목소리 복원 서비스.', icon: 'Mic2', detailedDescription: '목소리에 담긴 감정과 기억을 AI 기술로 보존하고 재현하는 혁신적인 서비스입니다.' },
+            { id: 'ai-roleplay', title: 'AI 역할 대행 서비스', description: '심리 안정 및 외로움 해결을 위한 AI 역할극 전문가 양성 (가족 역할 수행 등).', icon: 'Users', detailedDescription: '현대 사회의 고립과 외로움 문제를 해결하기 위한 심리 지원 서비스입니다.' },
+            { id: 'ai-skillnet', title: 'AI SKILL NET', description: '경력 단절 여성을 위한 AI 역량 개발 및 취업 연계 (취업형/아웃소싱형 프리미엄 교육).', icon: 'Network', detailedDescription: '경력 단절 여성들이 AI 시대의 핵심 인재로 거듭날 수 있도록 돕는 프리미엄 교육 및 취업 네트워크입니다.' },
+            { id: 'ai-agent', title: 'AI AGENT CONVERTER', description: '시니어 및 경단녀를 위한 AI 직무 복귀 파일럿 (AI 에이전트 설계 및 운영 관리자 양성).', icon: 'Cpu', detailedDescription: '시니어와 경력 단절 여성들이 AI 에이전트 설계 및 운영 전문가로 활약할 수 있도록 돕는 직무 전환 프로그램입니다.' },
+            { id: 'companion-bot', title: '반려봇 및 기업 AI 전환', description: '디지털 트윈 기반 위험 감시/투약 관리 서비스 및 정부 보조금을 활용한 기업 AI 전환 전문 인력 양성.', icon: 'Bot', detailedDescription: '디지털 트윈 기술이 적용된 반려봇을 통해 독거 노인 및 환자의 안전을 24시간 모니터링합니다.' }
+        ];
+
+        const INITIAL_NEWS = [
+            { id: 'news-1', title: '제 1차 전국 지점장 통합 VIP 초청 설명회', date: '2026.04.11 (토)', description: '시간: 오후 3시 | 장소: 서울시 동작구 노량진로186, 세미나실. 전근식 서울시 교육감과 전국 지점장님들을 모시고 통합 비즈니스 모델 설명회를 개최합니다.', image: 'https://picsum.photos/seed/news1/800/600', category: '설명회', link: '#' },
+            { id: 'news-2', title: '제 2차 AI시대 대한민국 산업기술 인력 전략 포럼', date: '2026.05.02 (토) 오후3시', description: 'AI 시대의 도래에 따른 지역 산업기술 인력 양성 및 확보 전략을 논의하는 국회 포럼이 개최됩니다.', image: 'https://picsum.photos/seed/news2/800/600', category: '국회포럼', link: '#' },
+            { id: 'news-3', title: '제 3차 전국 지점장 통합 워크숍 개최 안내', date: '2026.05.22 (금)', description: '전국 지점 간의 네트워크 강화와 성공 모델 공유를 위한 통합 워크숍이 진행될 예정입니다.', image: 'https://picsum.photos/seed/news3/800/600', category: '워크숍', link: '#' }
+        ];
+
+        const INITIAL_CONFIG = {
+            siteName: '전국지역산업기술협동조합',
+            heroTitle: '정부지원 사업 기반의 지역 혁신, 미래를 여는 협동의 힘',
+            heroSubtitle: '공공기관 에어컨청소·공기정화 우선구매 대상자 모집 - 정부 우선 구매 대상 비즈니스 모델과 함께 성장할 파트너를 찾습니다.',
+            accentColor: '#8A2BE2',
+            secondaryAccentColor: '#00D2FF',
+            videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&loop=1&playlist=dQw4w9WgXcQ&controls=0&showinfo=0',
+            logoUrl: 'https://picsum.photos/seed/logo/200/200',
+            logoInvert: true,
+            backgroundColor: '#000000',
+            backgroundOpacity: 0.4,
+            overlayColor: '#000000',
+            overlayOpacity: 0.6,
+            fontSize: 16,
+            fontWeight: '400',
+            heroTitleSize: 64,
+            heroTitleWeight: '900',
+            heroSubtitleSize: 20,
+            heroSubtitleWeight: '400',
+            logoFontSize: 24,
+            buttons: [
+                { id: '1', label: '지점장 지원하기', link: '#recruit' },
+                { id: '2', label: '사업모델 보기', link: '#business' }
+            ],
+            phone: '1533-8516',
+            email: 'pcs@itcoop.or.kr',
+            address: '서울시 동작구 노량진로186',
+            googleFormUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSc-S8Yp-p_Y_z-p_Y_z-p_Y_z-p_Y_z-p_Y_z-p_Y_z-p_Y_z/viewform',
+            recruitmentButtonLabel: '지원서 작성하러 가기'
+        };
+
+        // --- Components ---
+
+        const IconMap = { Wind, HeartPulse, Leaf, Video, Megaphone, Mic2, Users, Network, Cpu, Bot, HelpCircle };
+
+        function BusinessSection({ models }) {
+            const [selectedModel, setSelectedModel] = useState(null);
+
+            return (
+                <section id="business" className="py-24 px-6 max-w-7xl mx-auto">
+                    <div className="text-center mb-20">
+                        <span className="text-accent font-semibold tracking-widest uppercase text-sm mb-4 block" style={{ color: 'var(--accent)' }}>Core Business Models</span>
+                        <h2 className="text-4xl md:text-5xl font-bold mb-6">10대 핵심 사업 모델</h2>
+                        <p className="text-gray-400 max-w-2xl mx-auto text-lg">전국지역산업기술협동조합은 AI와 빅데이터 기술을 기반으로 지역 사회의 문제를 해결합니다.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {models.map((model, index) => {
+                            const IconComponent = IconMap[model.icon] || HelpCircle;
+                            return (
+                                <motion.div
+                                    key={model.id}
+                                    whileHover={{ y: -10, scale: 1.02 }}
+                                    onClick={() => setSelectedModel(model)}
+                                    className="glass-card p-8 group cursor-pointer rounded-3xl"
+                                >
+                                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-accent transition-all" style={{ '--tw-bg-opacity': 0.1 }}>
+                                        <IconComponent className="w-8 h-8 text-accent" style={{ color: 'var(--accent)' }} />
+                                    </div>
+                                    <h3 className="text-2xl font-bold mb-4 group-hover:text-accent transition-colors">{model.title}</h3>
+                                    <p className="text-gray-400 leading-relaxed">{model.description}</p>
+                                    <div className="mt-6 flex items-center gap-2 text-accent font-semibold opacity-0 group-hover:opacity-100 transition-all">
+                                        <span className="text-sm">자세히 보기</span>
+                                        <ChevronRight className="w-4 h-4" />
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+
+                    <AnimatePresence>
+                        {selectedModel && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedModel(null)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+                                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative w-full max-w-2xl bg-[#121212] border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl overflow-hidden">
+                                    <button onClick={() => setSelectedModel(null)} className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full"><X /></button>
+                                    <div className="flex items-center gap-6 mb-8">
+                                        <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'var(--accent)' }}>
+                                            {React.createElement(IconMap[selectedModel.icon] || HelpCircle, { className: "w-8 h-8 text-white" })}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-3xl font-bold">{selectedModel.title}</h3>
+                                            <p className="text-accent font-medium mt-1" style={{ color: 'var(--accent)' }}>핵심 비즈니스 모델</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h4 className="text-sm uppercase tracking-widest text-gray-500 font-bold mb-3">사업 개요</h4>
+                                            <p className="text-xl text-white/90 leading-relaxed">{selectedModel.description}</p>
+                                        </div>
+                                        <div className="h-px bg-white/10" />
+                                        <div>
+                                            <h4 className="text-sm uppercase tracking-widest text-gray-500 font-bold mb-3">상세 설명</h4>
+                                            <p className="text-gray-400 leading-relaxed whitespace-pre-wrap">{selectedModel.detailedDescription}</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-12">
+                                        <button onClick={() => { setSelectedModel(null); window.location.href = '#recruit'; }} className="w-full bg-accent hover:opacity-90 text-white font-bold py-4 rounded-xl transition-all" style={{ backgroundColor: 'var(--accent)' }}>이 사업 모델로 지원하기</button>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
+                </section>
+            );
+        }
+
+        function RecruitmentForm({ googleFormUrl, buttonLabel }) {
+            return (
+                <section id="recruit" className="py-24 px-6 bg-accent/5 relative overflow-hidden" style={{ backgroundColor: 'rgba(var(--accent-rgb), 0.05)' }}>
+                    <div className="max-w-4xl mx-auto text-center relative z-10">
+                        <h2 className="text-4xl md:text-5xl font-black mb-8 tracking-tighter">전국 지점장 파트너 모집</h2>
+                        <p className="text-xl text-gray-400 mb-12 leading-relaxed">정부 지원 사업과 AI 기술이 결합된 혁신적인 비즈니스 모델과 함께할 열정적인 파트너를 모십니다.</p>
+                        <div className="glass-card p-10 rounded-3xl border-accent/20 border" style={{ borderColor: 'rgba(var(--accent-rgb), 0.2)' }}>
+                            <h3 className="text-2xl font-bold mb-6">지금 바로 지원하세요</h3>
+                            <p className="text-gray-400 mb-10">아래 버튼을 클릭하여 구글 폼 지원서를 작성해 주시면, 담당자가 확인 후 개별 연락 드립니다.</p>
+                            <a href={googleFormUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 bg-accent hover:opacity-90 text-white px-12 py-5 rounded-full text-xl font-bold transition-all" style={{ backgroundColor: 'var(--accent)' }}>
+                                {buttonLabel} <ArrowRight className="w-6 h-6" />
+                            </a>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        // --- Main App ---
+
+        function App() {
+            // Load state from localStorage or use initial
+            const [config, setConfig] = useState(() => {
+                const saved = localStorage.getItem('site_config');
+                return saved ? JSON.parse(saved) : INITIAL_CONFIG;
+            });
+            const [models, setModels] = useState(() => {
+                const saved = localStorage.getItem('site_models');
+                return saved ? JSON.parse(saved) : INITIAL_BUSINESS_MODELS;
+            });
+            const [news, setNews] = useState(() => {
+                const saved = localStorage.getItem('site_news');
+                return saved ? JSON.parse(saved) : INITIAL_NEWS;
+            });
+
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+            // Save to localStorage on change
+            useEffect(() => { localStorage.setItem('site_config', JSON.stringify(config)); }, [config]);
+            useEffect(() => { localStorage.setItem('site_models', JSON.stringify(models)); }, [models]);
+            useEffect(() => { localStorage.setItem('site_news', JSON.stringify(news)); }, [news]);
+
+            const handleConfigChange = (key, value) => setConfig(prev => ({ ...prev, [key]: value }));
+            const handleUpdateNews = (id, field, value) => setNews(prev => prev.map(n => n.id === id ? { ...n, [field]: value } : n));
+            const handleUpdateModel = (id, field, value) => setModels(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+
+            // Helper to convert hex to RGB for CSS variables
+            const hexToRgb = (hex) => {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '138, 43, 226';
+            };
+
+            return (
+                <div 
+                    className="min-h-screen bg-black"
+                    style={{ 
+                        fontSize: `${config.fontSize}px`, 
+                        fontWeight: config.fontWeight,
+                        '--accent': config.accentColor,
+                        '--accent-rgb': hexToRgb(config.accentColor),
+                        '--accent-secondary': config.secondaryAccentColor
+                    }}
+                >
+                    {/* Navigation */}
+                    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
+                        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <img src={config.logoUrl} alt="Logo" className="w-10 h-10 object-contain" style={{ filter: config.logoInvert ? 'invert(1)' : 'none' }} />
+                                <span className="font-black tracking-tighter" style={{ fontSize: `${config.logoFontSize}px` }}>{config.siteName}</span>
+                            </div>
+
+                            <div className="hidden md:flex items-center gap-8">
+                                <a href="#business" className="text-gray-400 hover:text-white transition-colors">사업모델</a>
+                                <a href="#recruit" className="text-gray-400 hover:text-white transition-colors">지점장 모집</a>
+                                <a href="#news" className="text-gray-400 hover:text-white transition-colors">공지사항</a>
+                                <button onClick={() => setIsAdminOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><Settings className="w-5 h-5 text-gray-400" /></button>
+                                <a href="#recruit" className="bg-accent px-6 py-2.5 rounded-full font-semibold transition-all" style={{ backgroundColor: 'var(--accent)' }}>지금 지원하기</a>
+                            </div>
+
+                            <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? <X /> : <Menu />}</button>
+                        </div>
+                    </nav>
+
+                    {/* Hero Section */}
+                    <header className="relative h-screen flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 z-0" style={{ backgroundColor: config.backgroundColor }}>
+                            <iframe src={config.videoUrl} className="w-full h-[120%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none scale-110" style={{ opacity: config.backgroundOpacity }} />
+                            <div className="absolute inset-0" style={{ backgroundColor: config.overlayColor, opacity: config.overlayOpacity }} />
+                        </div>
+
+                        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+                            <h1 className="font-black mb-8 leading-tight tracking-tighter" style={{ fontSize: `${config.heroTitleSize}px`, fontWeight: config.heroTitleWeight }}>
+                                {config.heroTitle}
+                            </h1>
+                            <p className="text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed" style={{ fontSize: `${config.heroSubtitleSize}px`, fontWeight: config.heroSubtitleWeight }}>
+                                {config.heroSubtitle}
+                            </p>
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                                {config.buttons.map((btn, idx) => (
+                                    <a key={btn.id} href={btn.link} className={`w-full md:w-auto px-10 py-5 rounded-full text-xl font-bold flex items-center justify-center gap-2 transition-all ${idx === 0 ? "bg-accent text-white" : "glass-card"}`} style={idx === 0 ? { backgroundColor: 'var(--accent)' } : {}}>
+                                        {btn.label} {idx === 0 && <ArrowRight className="w-6 h-6" />}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Business Models */}
+                    <BusinessSection models={models} />
+
+                    {/* Recruitment Form */}
+                    <RecruitmentForm googleFormUrl={config.googleFormUrl} buttonLabel={config.recruitmentButtonLabel} />
+
+                    {/* News Section */}
+                    <section id="news" className="py-24 px-6 bg-white/5">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="mb-12">
+                                <h2 className="text-4xl font-bold mb-4">새로운 소식 & 일정</h2>
+                                <p className="text-gray-400">협동조합의 최신 공지사항과 주요 행사 일정을 전해드립니다.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {news.map((item) => (
+                                    <div key={item.id} className="glass-card overflow-hidden group rounded-3xl flex flex-col">
+                                        <div className="relative h-56 overflow-hidden">
+                                            <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                            <div className="absolute top-4 left-4 px-3 py-1 bg-accent/90 backdrop-blur-md rounded-full text-xs font-bold" style={{ backgroundColor: 'var(--accent)' }}>{item.category}</div>
+                                        </div>
+                                        <div className="p-6 flex-1 flex flex-col">
+                                            <div className="text-accent text-sm font-bold mb-2" style={{ color: 'var(--accent)' }}>{item.date}</div>
+                                            <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                                            <p className="text-gray-400 text-sm leading-relaxed line-clamp-3 mb-6">{item.description}</p>
+                                            <div className="mt-auto flex items-center gap-2 text-sm font-bold">상세보기 <ArrowRight className="w-4 h-4" /></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="py-20 px-6 border-t border-white/10">
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+                            <div className="col-span-1 md:col-span-2">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <img src={config.logoUrl} alt="Logo" className="w-8 h-8 object-contain" style={{ filter: config.logoInvert ? 'invert(1)' : 'none' }} />
+                                    <span className="font-bold text-xl">{config.siteName}</span>
+                                </div>
+                                <p className="text-gray-400 mb-8 max-w-md">기술과 협동의 가치를 믿습니다. 지역 산업이 AI를 통해 혁신하는 생태계를 만들어갑니다.</p>
+                                <div className="flex gap-4">
+                                    <div className="w-10 h-10 glass-card flex items-center justify-center rounded-full"><Youtube className="w-5 h-5" /></div>
+                                    <div className="w-10 h-10 glass-card flex items-center justify-center rounded-full"><Instagram className="w-5 h-5" /></div>
+                                    <div className="w-10 h-10 glass-card flex items-center justify-center rounded-full"><Twitter className="w-5 h-5" /></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="font-bold mb-6">바로가기</h4>
+                                <ul className="space-y-4 text-gray-400">
+                                    <li><a href="#business">사업모델</a></li>
+                                    <li><a href="#recruit">지점장 모집</a></li>
+                                    <li><a href="#news">공지사항</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-bold mb-6">고객지원</h4>
+                                <ul className="space-y-4 text-gray-400">
+                                    <li>대표번호: {config.phone}</li>
+                                    <li>이메일: {config.email}</li>
+                                    <li>주소: {config.address}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </footer>
+
+                    {/* Admin Sidebar */}
+                    <AnimatePresence>
+                        {isAdminOpen && (
+                            <>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAdminOpen(false)} className="fixed inset-0 z-[60] bg-black/40" />
+                                <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed top-0 right-0 bottom-0 w-full max-w-md z-[70] bg-[#0A0A0A] border-l border-white/10 p-8 overflow-y-auto">
+                                    <div className="flex items-center justify-between mb-10">
+                                        <h2 className="text-2xl font-bold flex items-center gap-2"><Settings className="text-accent" style={{ color: 'var(--accent)' }} /> 관리자 설정</h2>
+                                        <button onClick={() => setIsAdminOpen(false)} className="p-2 hover:bg-white/5 rounded-full"><X /></button>
+                                    </div>
+
+                                    <div className="space-y-8 pb-20">
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">기본 정보</h3>
+                                            <div className="space-y-2">
+                                                <label className="text-xs text-gray-400">사이트 이름</label>
+                                                <input type="text" value={config.siteName} onChange={(e) => handleConfigChange('siteName', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-accent" style={{ '--tw-ring-color': 'var(--accent)' }} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs text-gray-400">로고 URL</label>
+                                                <input type="text" value={config.logoUrl} onChange={(e) => handleConfigChange('logoUrl', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-accent" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs text-gray-400">포인트 컬러</label>
+                                                <input type="color" value={config.accentColor} onChange={(e) => handleConfigChange('accentColor', e.target.value)} className="w-full h-10 bg-transparent border-none cursor-pointer" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">사업 모델 관리</h3>
+                                            {models.map(m => (
+                                                <div key={m.id} className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-2">
+                                                    <input type="text" value={m.title} onChange={(e) => handleUpdateModel(m.id, 'title', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm" />
+                                                    <textarea value={m.description} onChange={(e) => handleUpdateModel(m.id, 'description', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs h-20" />
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">공지사항 관리</h3>
+                                            {news.map(n => (
+                                                <div key={n.id} className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-2">
+                                                    <input type="text" value={n.title} onChange={(e) => handleUpdateNews(n.id, 'title', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm" />
+                                                    <input type="text" value={n.date} onChange={(e) => handleUpdateNews(n.id, 'date', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs" />
+                                                    <textarea value={n.description} onChange={(e) => handleUpdateNews(n.id, 'description', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs h-20" />
+                                                    <input type="text" value={n.image} onChange={(e) => handleUpdateNews(n.id, 'image', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-[10px]" placeholder="이미지 URL" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
